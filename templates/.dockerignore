@@ -1,0 +1,13 @@
+/.idea
+/.git
+/.env
+/node_modules
+/storage/app/public/*
+/storage/app/artifacts/*
+/storage/app/uploads/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/storage/framework/views/*
+/storage/logs/*
+/bootstrap/cache/*

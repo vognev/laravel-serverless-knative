@@ -1,0 +1,242 @@
+# https://github.com/knative/eventing-contrib/tree/master/awssqs/samples
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    contrib.eventing.knative.dev/release: "v0.8.2"
+  name: knative-sources
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    contrib.eventing.knative.dev/release: "v0.8.2"
+  name: awssqs-controller-manager
+  namespace: knative-sources
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    contrib.eventing.knative.dev/release: "v0.8.2"
+  name: awssqs-controller
+rules:
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - sources.eventing.knative.dev
+  resources:
+  - awssqssources
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+- apiGroups:
+  - sources.eventing.knative.dev
+  resources:
+  - awssqssources/status
+  - awssqssources/finalizers
+  verbs:
+  - get
+  - update
+  - patch
+- apiGroups:
+  - serving.knative.dev
+  resources:
+  - services
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - eventing.knative.dev
+  resources:
+  - channels
+  - eventtypes
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    contrib.eventing.knative.dev/release: "v0.8.2"
+  name: awssqs-controller-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: awssqs-controller
+subjects:
+- kind: ServiceAccount
+  name: awssqs-controller-manager
+  namespace: knative-sources
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  labels:
+    contrib.eventing.knative.dev/release: "v0.8.2"
+    eventing.knative.dev/source: "true"
+    knative.dev/crd-install: "true"
+  name: awssqssources.sources.eventing.knative.dev
+spec:
+  group: sources.eventing.knative.dev
+  names:
+    categories:
+    - all
+    - knative
+    - eventing
+    - sources
+    kind: AwsSqsSource
+    plural: awssqssources
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      properties:
+        registry:
+          description: Internal information, users should not set this property
+          properties:
+            eventTypes:
+              description: Event types that AwsSqsSource can produce
+              properties:
+                message:
+                  properties:
+                    schema:
+                      type: string
+                    type:
+                      pattern: aws.sqs.message
+                      type: string
+                  type: object
+              type: object
+          type: object
+        spec:
+          properties:
+            awsCredsSecret:
+              type: object
+            queueUrl:
+              type: string
+            serviceAccountName:
+              type: string
+            sink:
+              type: object
+          required:
+          - queueUrl
+          type: object
+        status:
+          properties:
+            conditions:
+              items:
+                properties:
+                  lastTransitionTime:
+                    type: string
+                  message:
+                    type: string
+                  reason:
+                    type: string
+                  severity:
+                    type: string
+                  status:
+                    type: string
+                  type:
+                    type: string
+                required:
+                - type
+                - status
+                type: object
+              type: array
+            sinkUri:
+              type: string
+          type: object
+  version: v1alpha1
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    contrib.eventing.knative.dev/release: "v0.8.2"
+    control-plane: awssqs-controller-manager
+  name: awssqs-controller-manager
+  namespace: knative-sources
+spec:
+  ports:
+  - port: 443
+  selector:
+    control-plane: awssqs-controller-manager
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    contrib.eventing.knative.dev/release: "v0.8.2"
+    control-plane: awssqs-controller-manager
+  name: awssqs-controller-manager
+  namespace: knative-sources
+spec:
+  selector:
+    matchLabels:
+      control-plane: awssqs-controller-manager
+  serviceName: awssqs-controller-manager
+  template:
+    metadata:
+      labels:
+        control-plane: awssqs-controller-manager
+    spec:
+      containers:
+      - env:
+        - name: AWSSQS_RA_IMAGE
+          value: gcr.io/knative-releases/github.com/knative/eventing-contrib/contrib/awssqs/cmd/receive_adapter@sha256:4897cd2c562e91c88a9e1fc47f3dcd9206ecc65a672fc1d2bee21bc1b64cd2b1
+        image: gcr.io/knative-releases/github.com/knative/eventing-contrib/contrib/awssqs/cmd/controller@sha256:074410b9b6077c54a4897f8a1ab495158838a20aa77df4f65011e581b5b69da0
+        name: manager
+        resources:
+          limits:
+            cpu: 100m
+            memory: 30Mi
+          requests:
+            cpu: 20m
+            memory: 20Mi
+      serviceAccount: awssqs-controller-manager
+      terminationGracePeriodSeconds: 10
+
+---

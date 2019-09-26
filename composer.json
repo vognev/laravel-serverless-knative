@@ -1,0 +1,42 @@
+{
+    "name": "vognev/laravel-serverless-knative",
+    "description": "Laravel/Serverless for Knative",
+    "keywords": ["laravel", "serverless", "knative"],
+    "type": "library",
+    "license": "MIT",
+    "version": "v0.0.1",
+    "authors": [{
+        "name": "Vitaliy Ognev",
+        "email": "vitaliy.ognev@gmail.com"
+    }],
+    "require": {
+        "php": ">=7.2.0",
+        "ext-json": "*",
+        "ext-sockets": "*",
+        "docker-php/docker-php": "^2.0",
+        "jane-php/open-api-runtime": "^4 <4.3",
+        "vognev/laravel-serverless": "^0.0.1"
+    },
+    "provide": {
+        "laravel/serverless": "1.0.0"
+    },
+    "conflict": {
+        "vognev/laravel-serverless-aws": "*",
+        "vognev/laravel-serverless-kubeless": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Laravel\\Serverless\\Knative\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Laravel\\Serverless\\Knative\\ServerlessServiceProvider"
+            ]
+        }
+    },
+    "suggest": {
+        "aws/aws-sdk-php:~3.0": "AWS SQS Queue support"
+    }
+}

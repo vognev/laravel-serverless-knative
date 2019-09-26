@@ -1,0 +1,48 @@
+#!/opt/bin/php
+<?php declare(ticks=1);
+
+require './vendor/autoload.php';
+require './bootstrap/app.php';
+
+use Laravel\Serverless\Application;
+use Laravel\Serverless\Knative\Proxy;
+use Laravel\Serverless\Knative\RequestFactory;
+
+Proxy::start(function(array $event, array $context, Proxy $proxy) {
+    switch($context['handler']) {
+        case 'artisan':
+            if (
+                is_array($event['data']) &&
+                array_key_exists('Body',        $event['data']) &&
+                array_key_exists('MessageId',   $event['data']) &&
+                array_key_exists('Attributes',  $event['data'])
+            ) {
+                $args = ['serverless:work', base64_encode($event['data']['Body'])];
+            } else {
+                $args = json_decode($event['data']['body']) ??
+                    ['schedule:run', '--no-ansi', '--no-interaction'];
+            }
+
+            $proxy->log(sprintf(
+                'CLI %s', serialize($args)
+            ));
+
+            list($status, $output) = Application::artisan(array_merge(
+                [__FILE__], $args
+            ));
+
+            if ($status !== 0) {
+                throw new \RuntimeException($output);
+            }
+
+            return $output;
+        case 'website':
+            $request = RequestFactory::fromPayload($event);
+            $proxy->log(sprintf(
+                'WEB %s %s', $request->getMethod(), $request->getRequestUri()
+            ));
+            return Application::website($request);
+        default:
+            throw new RuntimeException("Unknown function ${context['function-name']}");
+    }
+});

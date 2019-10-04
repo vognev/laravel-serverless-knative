@@ -24,7 +24,8 @@ return [
         'url'       => env('KUBELESS_SQS_QUEUE')
     ],
     'artisan'       => [
-        'useHPA'    => false,
+        'minScale'  => 0,
+        'maxScale'  => 2,
         'requests'  => [
             'memory'    => '128Mi',
             'cpu'       => '100m',
@@ -35,7 +36,8 @@ return [
         ]
     ],
     'website'       => [
-        'useHPA'    => false,
+        'minScale'  => 0,
+        'maxScale'  => 4,
         'requests'  => [
             'memory'    => '128Mi',
             'cpu'       => '100m',

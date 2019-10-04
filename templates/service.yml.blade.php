@@ -10,12 +10,11 @@ spec:
   template:
     metadata:
       annotations:
-@if ($artisan['useHPA'])
-
-        autoscaling.knative.dev/maxScale: "2"
-        autoscaling.knative.dev/metric: cpu
-        autoscaling.knative.dev/class: hpa.autoscaling.knative.dev
-@endif
+        autoscaling.knative.dev/class:    hpa.autoscaling.knative.dev
+        autoscaling.knative.dev/metric:   cpu
+        autoscaling.knative.dev/target:   "{{ $artisan['target']  ?? 80 }}"
+        autoscaling.knative.dev/minScale: "{{ $artisan['minScale'] ?? 1 }}"
+        autoscaling.knative.dev/maxScale: "{{ $artisan['maxScale'] ?? 1 }}"
     spec:
       containers:
         - image: {{ $image }}
@@ -45,12 +44,11 @@ spec:
   template:
     metadata:
       annotations:
-@if ($website['useHPA'])
-
-        autoscaling.knative.dev/maxScale: "4"
-        autoscaling.knative.dev/metric: cpu
-        autoscaling.knative.dev/class: hpa.autoscaling.knative.dev
-@endif
+        autoscaling.knative.dev/class:    hpa.autoscaling.knative.dev
+        autoscaling.knative.dev/metric:   cpu
+        autoscaling.knative.dev/target:   "{{ $website['target']  ?? 80 }}"
+        autoscaling.knative.dev/minScale: "{{ $website['minScale'] ?? 1 }}"
+        autoscaling.knative.dev/maxScale: "{{ $website['maxScale'] ?? 1 }}"
     spec:
       containers:
         - image: {{ $image }}
